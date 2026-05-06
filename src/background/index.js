@@ -75,6 +75,12 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
+    case 'NAV_CHANGED':
+      handleNavChanged(message.url, sender.tab?.id)
+        .then(() => sendResponse({ ok: true }))
+        .catch(() => sendResponse({ ok: false }));
+      return true;
+
     case 'SCORE_CONTENT':
       handleScoreContent(message, sender)
         .then(sendResponse)
@@ -138,6 +144,27 @@ async function handleScoreContent({ content, title, url }, sender) {
 
   inFlight.set(url, promise);
   return promise;
+}
+
+async function handleNavChanged(url, tabId) {
+  if (!tabId) return;
+  const session = sessions.get(tabId);
+  if (session) {
+    // Record the outgoing visit before resetting.
+    const { url: oldUrl, startTime, slopIndex } = session;
+    if (oldUrl && slopIndex !== null && oldUrl !== url) {
+      const durationSeconds = Math.round((Date.now() - startTime) / 1000);
+      if (durationSeconds >= 5) {
+        await recordVisit({ url: oldUrl, slopIndex, durationSeconds }, localStore);
+      }
+    }
+    session.url       = url;
+    session.startTime = Date.now();
+    session.slopIndex = null;
+  } else {
+    sessions.set(tabId, { url, startTime: Date.now(), slopIndex: null });
+  }
+  await setTabIcon(tabId, null);
 }
 
 async function handleRescore(tabId) {

@@ -84,6 +84,11 @@ function onUrlChange() {
   const newUrl = window.location.href;
   if (newUrl === currentUrl) return;
   currentUrl = newUrl;
+
+  // Tell the background immediately so it can reset the icon to gray
+  // and close out the previous session — don't wait for scoring.
+  chrome.runtime.sendMessage({ type: 'NAV_CHANGED', url: newUrl }).catch(() => {});
+
   scheduleRescore();
 }
 
