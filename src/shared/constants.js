@@ -7,6 +7,7 @@ export const RUBRIC_WEIGHTS = {
   engagement_bait_score: 1.5,
   commercial_extraction_score: 1.0,
   political_outrage_optimization: 1.3,
+  attention_fragmentation: 1.2,
 };
 
 export const RUBRIC_DIMENSIONS = [
@@ -17,7 +18,8 @@ export const RUBRIC_DIMENSIONS = [
   { key: 'ai_generation_likelihood', label: 'AI-Generated',    positive: false },
   { key: 'engagement_bait_score',    label: 'Engagement Bait', positive: false },
   { key: 'commercial_extraction_score',     label: 'Commercial',    positive: false },
-  { key: 'political_outrage_optimization',  label: 'Outrage Bait',  positive: false },
+  { key: 'political_outrage_optimization',  label: 'Outrage Bait',      positive: false },
+  { key: 'attention_fragmentation',         label: 'Attention Split',    positive: false },
 ];
 
 export const SLOP_THRESHOLDS = {
@@ -74,5 +76,6 @@ export const SCORING_PROMPT = `You are a content quality evaluator. Analyze the 
 - engagement_bait_score: Is this optimized for clicks over substance? (10 = pure clickbait, 0 = not at all)
 - commercial_extraction_score: Is this designed to keep you browsing to extract commercial value? (10 = pure extraction, 0 = none)
 - political_outrage_optimization: Is the primary emotional reward tribal/political validation or manufactured outrage rather than genuine understanding? Score high for political snark, gotcha coverage, and content whose value is "your side wins." (10 = pure outrage fuel/tribal content, 0 = none)
+- attention_fragmentation: Does the page structure fragment attention across many competing items rather than supporting engagement with one coherent piece? Score high for feeds, front pages, headline lists, and infinite-scroll surfaces where every item independently bids for attention. Score low for a single article, essay, video, or other unified piece of content the reader can finish. (10 = pure feed/list with no coherent single item, 0 = single focused piece)
 
-Return ONLY a valid JSON object with these exact eight keys and integer values 0–10. No explanation, no markdown fences.`;
+Return ONLY a valid JSON object with these exact nine keys and integer values 0–10. No explanation, no markdown fences.`;

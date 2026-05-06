@@ -9,14 +9,15 @@ import { RUBRIC_WEIGHTS, STORAGE_KEYS } from '../src/shared/constants.js';
 // Build a full dimensions object, with defaults of 5 for any unspecified key.
 function dims(overrides = {}) {
   return {
-    substance_density:            5,
-    originality:                  5,
-    source_quality:               5,
-    manipulation_tactics:         5,
-    ai_generation_likelihood:     5,
-    engagement_bait_score:        5,
-    commercial_extraction_score:  5,
+    substance_density:              5,
+    originality:                    5,
+    source_quality:                 5,
+    manipulation_tactics:           5,
+    ai_generation_likelihood:       5,
+    engagement_bait_score:          5,
+    commercial_extraction_score:    5,
     political_outrage_optimization: 5,
+    attention_fragmentation:        5,
     ...overrides,
   };
 }
@@ -55,7 +56,7 @@ describe('computeSlopIndex', () => {
       substance_density: 10, originality: 10, source_quality: 10,
       manipulation_tactics: 0, ai_generation_likelihood: 0,
       engagement_bait_score: 0, commercial_extraction_score: 0,
-      political_outrage_optimization: 0,
+      political_outrage_optimization: 0, attention_fragmentation: 0,
     }))).toBeCloseTo(0, 1);
   });
 
@@ -64,7 +65,7 @@ describe('computeSlopIndex', () => {
       substance_density: 0, originality: 0, source_quality: 0,
       manipulation_tactics: 10, ai_generation_likelihood: 10,
       engagement_bait_score: 10, commercial_extraction_score: 10,
-      political_outrage_optimization: 10,
+      political_outrage_optimization: 10, attention_fragmentation: 10,
     }))).toBeCloseTo(10, 1);
   });
 
@@ -233,6 +234,92 @@ describe('computeSlopIndex', () => {
     expect(getSlopLabel(computeSlopIndex(analysisProfile))).toBe('low');
   });
 
+  // ── attention_fragmentation ──
+  test('increasing attention_fragmentation raises slop index', () => {
+    expect(computeSlopIndex(dims({ attention_fragmentation: 9 }))).toBeGreaterThan(
+      computeSlopIndex(dims({ attention_fragmentation: 1 })),
+    );
+  });
+
+  test('attention_fragmentation at 10 raises slop index above neutral', () => {
+    expect(computeSlopIndex(dims({ attention_fragmentation: 10 }))).toBeGreaterThan(
+      computeSlopIndex(dims()),
+    );
+  });
+
+  test('attention_fragmentation at 0 lowers slop index below neutral', () => {
+    expect(computeSlopIndex(dims({ attention_fragmentation: 0 }))).toBeLessThan(
+      computeSlopIndex(dims()),
+    );
+  });
+
+  test('well-curated feed scores above neutral (yellow) even with decent source quality', () => {
+    // A quality newspaper homepage: fragmented format but genuinely good sources.
+    // Should register as medium — visible signal without mislabeling it as pure slop.
+    const qualityFeed = dims({
+      substance_density:              5,
+      originality:                    4,
+      source_quality:                 7,
+      manipulation_tactics:           4,
+      ai_generation_likelihood:       1,
+      engagement_bait_score:          6,
+      commercial_extraction_score:    3,
+      political_outrage_optimization: 3,
+      attention_fragmentation:        9,
+    });
+    const score = computeSlopIndex(qualityFeed);
+    expect(score).toBeGreaterThan(3.5); // above low threshold → at least yellow
+    expect(getSlopLabel(score)).toBe('medium');
+  });
+
+  test('low-quality feed (clickbait headlines, no substance) scores high slop', () => {
+    // A Reddit-style front page or tabloid feed: fragmented AND low quality.
+    const lowQualityFeed = dims({
+      substance_density:              2,
+      originality:                    2,
+      source_quality:                 3,
+      manipulation_tactics:           7,
+      ai_generation_likelihood:       3,
+      engagement_bait_score:          8,
+      commercial_extraction_score:    5,
+      political_outrage_optimization: 5,
+      attention_fragmentation:        9,
+    });
+    expect(computeSlopIndex(lowQualityFeed)).toBeGreaterThan(6.5);
+  });
+
+  test('single article page scores low on attention_fragmentation', () => {
+    const articlePage = dims({
+      substance_density:              7,
+      originality:                    6,
+      source_quality:                 7,
+      manipulation_tactics:           2,
+      ai_generation_likelihood:       1,
+      engagement_bait_score:          2,
+      commercial_extraction_score:    1,
+      political_outrage_optimization: 1,
+      attention_fragmentation:        1,
+    });
+    expect(computeSlopIndex(articlePage)).toBeLessThan(3.5);
+  });
+
+  test('same content quality: feed version scores higher than article version', () => {
+    const base = { substance_density: 5, originality: 5, source_quality: 6,
+      manipulation_tactics: 3, ai_generation_likelihood: 1,
+      engagement_bait_score: 4, commercial_extraction_score: 2,
+      political_outrage_optimization: 2 };
+    const feed    = dims({ ...base, attention_fragmentation: 9 });
+    const article = dims({ ...base, attention_fragmentation: 1 });
+    expect(computeSlopIndex(feed)).toBeGreaterThan(computeSlopIndex(article));
+  });
+
+  test('attention_fragmentation has less weight than manipulation_tactics', () => {
+    const base     = computeSlopIndex(dims());
+    const highFrag = computeSlopIndex(dims({ attention_fragmentation: 10 }));
+    const highManip = computeSlopIndex(dims({ manipulation_tactics: 10 }));
+    expect(highManip - base).toBeGreaterThan(highFrag - base);
+  });
+
   test('same originality score ranks lower after reframe: reaction piece vs analysis piece', () => {
     // Two pieces with the same originality=3 but different overall profiles:
     // the gotcha piece should still score worse than straight reporting.
@@ -317,6 +404,27 @@ describe('buildExplanation', () => {
   test('medium slop returns a generic mixed-quality message', () => {
     const s = buildExplanation(dims(), 5.0);
     expect(s.toLowerCase()).toMatch(/mixed|quality|substance/);
+  });
+
+  test('high slop + high attention_fragmentation → mentions feed/scanning/headlines', () => {
+    const s = buildExplanation(dims({ attention_fragmentation: 9, substance_density: 3 }), 7.5);
+    expect(s.toLowerCase()).toMatch(/feed|list|scan|headline/);
+  });
+
+  test('attention_fragmentation takes top precedence in explanation when highest signal', () => {
+    const s = buildExplanation(
+      dims({ attention_fragmentation: 9, political_outrage_optimization: 8, substance_density: 2 }),
+      8.0,
+    );
+    expect(s.toLowerCase()).toMatch(/feed|list|scan|headline/);
+  });
+
+  test('low attention_fragmentation falls through to next explanation', () => {
+    const s = buildExplanation(
+      dims({ attention_fragmentation: 2, political_outrage_optimization: 8, substance_density: 1 }),
+      7.5,
+    );
+    expect(s.toLowerCase()).toMatch(/outrage|tribal|political/);
   });
 
   test('high slop + high political_outrage → mentions outrage/tribal/political', () => {
@@ -513,7 +621,7 @@ describe('scoreContent', () => {
     const storage = new MockStorage({ [STORAGE_KEYS.API_KEY]: 'sk-ant-test' });
     const result  = await scoreContent({
       title: TITLE, url: URL_STR, textContent: CONTENT, storage,
-      fetchFn: makeFetch(dims({ substance_density: 10, originality: 10, source_quality: 10, manipulation_tactics: 0, ai_generation_likelihood: 0, engagement_bait_score: 0, commercial_extraction_score: 0, political_outrage_optimization: 0 })),
+      fetchFn: makeFetch(dims({ substance_density: 10, originality: 10, source_quality: 10, manipulation_tactics: 0, ai_generation_likelihood: 0, engagement_bait_score: 0, commercial_extraction_score: 0, political_outrage_optimization: 0, attention_fragmentation: 0 })),
     });
     expect(result.slopIndex).toBeCloseTo(0, 1);
     expect(result.label).toBe('low');
@@ -523,7 +631,7 @@ describe('scoreContent', () => {
     const storage = new MockStorage({ [STORAGE_KEYS.API_KEY]: 'sk-ant-test' });
     const result  = await scoreContent({
       title: TITLE, url: URL_STR, textContent: CONTENT, storage,
-      fetchFn: makeFetch(dims({ substance_density: 0, originality: 0, source_quality: 0, manipulation_tactics: 10, ai_generation_likelihood: 10, engagement_bait_score: 10, commercial_extraction_score: 10, political_outrage_optimization: 10 })),
+      fetchFn: makeFetch(dims({ substance_density: 0, originality: 0, source_quality: 0, manipulation_tactics: 10, ai_generation_likelihood: 10, engagement_bait_score: 10, commercial_extraction_score: 10, political_outrage_optimization: 10, attention_fragmentation: 10 })),
     });
     expect(result.slopIndex).toBeCloseTo(10, 1);
     expect(result.label).toBe('high');
