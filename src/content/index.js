@@ -1,24 +1,25 @@
 console.log('[SlopGuard] content script loaded');
 
 const MIN_CONTENT_LENGTH = 200;
+const INITIAL_DELAY_MS    = 1500;
+const NAVIGATION_DELAY_MS = 2000; // slightly longer — SPA content needs time to render
 
-// Subtrees with no readable text — reject entirely so their text
-// doesn't bleed into parent element textContent.
 const STRIP_TAGS = new Set([
   'script', 'style', 'noscript', 'template',
   'svg', 'video', 'audio', 'canvas', 'iframe',
 ]);
 
-// Leaf-level elements that carry actual human-readable content.
 const CONTENT_TAGS = new Set([
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'p', 'li', 'td', 'th', 'figcaption', 'blockquote', 'label', 'caption',
 ]);
 
-let scored = false;
+let scored         = false;
+let currentUrl     = window.location.href;
+let navigationTimer = null;
 
 function extractContent() {
-  const seen = new Set();
+  const seen  = new Set();
   const parts = [];
 
   const walker = document.createTreeWalker(
@@ -36,10 +37,7 @@ function extractContent() {
   let node;
   while ((node = walker.nextNode())) {
     if (!CONTENT_TAGS.has(node.tagName.toLowerCase())) continue;
-    // Skip nodes whose direct children are also content tags to avoid
-    // collecting both a <ul> parent and its <li> children separately.
     if ([...node.children].some(c => CONTENT_TAGS.has(c.tagName.toLowerCase()))) continue;
-
     const text = node.textContent.trim().replace(/\s+/g, ' ');
     if (text.length < 15 || seen.has(text)) continue;
     seen.add(text);
@@ -53,18 +51,9 @@ async function requestScore() {
   if (scored) return;
   scored = true;
 
-  console.log('[SlopGuard] starting extraction');
-  const t = performance.now();
-
   const text = extractContent();
-  console.log(`[SlopGuard] extraction: ${(performance.now() - t).toFixed(0)}ms, ${text.length} chars`);
+  if (text.length < MIN_CONTENT_LENGTH) return;
 
-  if (text.length < MIN_CONTENT_LENGTH) {
-    console.log('[SlopGuard] content too short, skipping');
-    return;
-  }
-
-  console.log('[SlopGuard] sending to background for scoring');
   try {
     await chrome.runtime.sendMessage({
       type:    'SCORE_CONTENT',
@@ -72,13 +61,49 @@ async function requestScore() {
       title:   document.title,
       url:     window.location.href,
     });
-    console.log('[SlopGuard] scoring complete');
-  } catch (err) {
-    console.log(`[SlopGuard] message error: ${err.message}`);
+  } catch {
+    // Extension context invalidated (e.g. extension updated mid-session).
   }
 }
 
-setTimeout(requestScore, 1500);
+// ── SPA navigation detection ──────────────────────────────────────────────────
+// SPAs change the URL via pushState/replaceState without a page reload.
+// We intercept those calls and popstate (back/forward), then debounce a
+// rescore to give the new page time to render its content.
+
+function scheduleRescore() {
+  if (navigationTimer) clearTimeout(navigationTimer);
+  navigationTimer = setTimeout(() => {
+    navigationTimer = null;
+    scored = false;
+    requestScore();
+  }, NAVIGATION_DELAY_MS);
+}
+
+function onUrlChange() {
+  const newUrl = window.location.href;
+  if (newUrl === currentUrl) return;
+  currentUrl = newUrl;
+  scheduleRescore();
+}
+
+const _pushState    = history.pushState.bind(history);
+const _replaceState = history.replaceState.bind(history);
+
+history.pushState = function (...args) {
+  _pushState(...args);
+  onUrlChange();
+};
+
+history.replaceState = function (...args) {
+  _replaceState(...args);
+  onUrlChange();
+};
+
+window.addEventListener('popstate', onUrlChange);
+
+// ── Initial load ──────────────────────────────────────────────────────────────
+setTimeout(requestScore, INITIAL_DELAY_MS);
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'RESCORE') {
