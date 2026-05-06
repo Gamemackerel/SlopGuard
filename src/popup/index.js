@@ -93,6 +93,14 @@ async function main() {
     window.close();
   });
 
+  document.getElementById('btn-rescore').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-rescore');
+    btn.textContent = 'Scoring…';
+    btn.disabled = true;
+    await chrome.runtime.sendMessage({ type: 'RESCORE' });
+    window.close();
+  });
+
   document.getElementById('btn-settings').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });

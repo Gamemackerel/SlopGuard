@@ -1,4 +1,4 @@
-import { getCachedScore, setCachedScore } from './cache.js';
+import { getCachedScore, setCachedScore, clearCachedScore } from './cache.js';
 import { scoreContent } from './scorer.js';
 import { recordVisit, getIngestionSummary } from './ingestion.js';
 import {
@@ -91,6 +91,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch((err) => sendResponse({ error: err.message }));
       return true;
 
+    case 'RESCORE':
+      handleRescore(sender.tab?.id ?? message.tabId)
+        .then(sendResponse)
+        .catch((err) => sendResponse({ error: err.message }));
+      return true;
+
     default:
       return false;
   }
@@ -130,6 +136,27 @@ async function handleScoreContent({ content, title, url }, sender) {
 
   inFlight.set(url, promise);
   return promise;
+}
+
+async function handleRescore(tabId) {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tabs.length) return { ok: false };
+  const { id: activeTabId, url } = tabs[0];
+  const tid = tabId ?? activeTabId;
+
+  await clearCachedScore(url, localStore);
+
+  const session = sessions.get(tid);
+  if (session) session.slopIndex = null;
+  await setTabIcon(tid, null);
+
+  try {
+    await chrome.tabs.sendMessage(tid, { type: 'RESCORE' });
+  } catch {
+    // Content script not yet ready — it will score on next load.
+  }
+
+  return { ok: true };
 }
 
 async function handleGetPopupData() {

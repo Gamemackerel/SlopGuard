@@ -4,7 +4,7 @@ import {
   clearCachedScore,
   urlToKey,
 } from '../src/background/cache.js';
-import { CACHE_TTL_MS, CACHE_VERSION, STORAGE_KEYS } from '../src/shared/constants.js';
+import { CACHE_TTL_MS, STORAGE_KEYS } from '../src/shared/constants.js';
 
 // ─────────────────────────────────────────────────────────────
 // urlToKey
@@ -107,7 +107,7 @@ describe('getCachedScore', () => {
     const url = 'https://example.com';
     const key = urlToKey(url);
     const storage = new MockStorage({
-      [key]: { data: { slopIndex: 3 }, timestamp: Date.now() - CACHE_TTL_MS + 60_000, version: CACHE_VERSION },
+      [key]: { data: { slopIndex: 3 }, timestamp: Date.now() - CACHE_TTL_MS + 60_000 },
     });
     expect(await getCachedScore(url, storage)).toEqual({ slopIndex: 3 });
   });
@@ -163,62 +163,6 @@ describe('setCachedScore', () => {
     await setCachedScore('https://a.com', { slopIndex: 3 }, storage);
     await setCachedScore('https://b.com', { slopIndex: 7 }, storage);
     expect(await getCachedScore('https://a.com', storage)).toEqual({ slopIndex: 3 });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────
-// clearCachedScore
-// ─────────────────────────────────────────────────────────────
-describe('cache versioning', () => {
-  test('rejects entry with missing version field', async () => {
-    const url = 'https://example.com';
-    const key = urlToKey(url);
-    const storage = new MockStorage({
-      [key]: { data: { slopIndex: 5 }, timestamp: Date.now() },
-      // no version field
-    });
-    expect(await getCachedScore(url, storage)).toBeNull();
-  });
-
-  test('rejects entry with outdated version', async () => {
-    const url = 'https://example.com';
-    const key = urlToKey(url);
-    const storage = new MockStorage({
-      [key]: { data: { slopIndex: 5 }, timestamp: Date.now(), version: CACHE_VERSION - 1 },
-    });
-    expect(await getCachedScore(url, storage)).toBeNull();
-  });
-
-  test('removes stale-version entry from storage', async () => {
-    const url = 'https://example.com';
-    const key = urlToKey(url);
-    const storage = new MockStorage({
-      [key]: { data: { slopIndex: 5 }, timestamp: Date.now(), version: 0 },
-    });
-    await getCachedScore(url, storage);
-    expect(storage._get(key)).toBeUndefined();
-  });
-
-  test('accepts entry with current version', async () => {
-    const storage = new MockStorage();
-    await setCachedScore('https://example.com', { slopIndex: 4 }, storage);
-    expect(await getCachedScore('https://example.com', storage)).toEqual({ slopIndex: 4 });
-  });
-
-  test('setCachedScore stores current CACHE_VERSION', async () => {
-    const storage = new MockStorage();
-    await setCachedScore('https://example.com', { slopIndex: 4 }, storage);
-    const key   = urlToKey('https://example.com');
-    expect(storage._get(key).version).toBe(CACHE_VERSION);
-  });
-
-  test('future version entry is also rejected (only exact version accepted)', async () => {
-    const url = 'https://example.com';
-    const key = urlToKey(url);
-    const storage = new MockStorage({
-      [key]: { data: { slopIndex: 5 }, timestamp: Date.now(), version: CACHE_VERSION + 1 },
-    });
-    expect(await getCachedScore(url, storage)).toBeNull();
   });
 });
 

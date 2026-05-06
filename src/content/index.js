@@ -33,3 +33,10 @@ async function requestScore() {
 }
 
 setTimeout(requestScore, 1500);
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'RESCORE') {
+    scored = false;
+    requestScore();
+  }
+});

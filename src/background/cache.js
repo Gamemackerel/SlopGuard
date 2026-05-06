@@ -1,4 +1,4 @@
-import { CACHE_TTL_MS, CACHE_VERSION, STORAGE_KEYS } from '../shared/constants.js';
+import { CACHE_TTL_MS, STORAGE_KEYS } from '../shared/constants.js';
 
 // djb2 hash — fast, no crypto needed, collision probability negligible
 // for a personal browser extension (<50k unique URLs over its lifetime).
@@ -17,7 +17,7 @@ export async function getCachedScore(url, storage) {
   const result = await storage.get(key);
   const entry = result[key];
   if (!entry) return null;
-  if (entry.version !== CACHE_VERSION || Date.now() - entry.timestamp > CACHE_TTL_MS) {
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
     await storage.remove(key);
     return null;
   }
@@ -26,7 +26,7 @@ export async function getCachedScore(url, storage) {
 
 export async function setCachedScore(url, data, storage) {
   const key = urlToKey(url);
-  await storage.set({ [key]: { data, timestamp: Date.now(), version: CACHE_VERSION } });
+  await storage.set({ [key]: { data, timestamp: Date.now() } });
 }
 
 export async function clearCachedScore(url, storage) {
