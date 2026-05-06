@@ -92,6 +92,7 @@ function onUrlChange() {
   scheduleRescore();
 }
 
+// Intercept History API directly — works for SPAs that call history.pushState.
 const _pushState    = history.pushState.bind(history);
 const _replaceState = history.replaceState.bind(history);
 
@@ -106,6 +107,10 @@ history.replaceState = function (...args) {
 };
 
 window.addEventListener('popstate', onUrlChange);
+
+// Polling fallback — catches SPAs (e.g. YouTube) that captured a reference
+// to the original pushState before our script ran and bypass the override above.
+setInterval(onUrlChange, 500);
 
 // ── Initial load ──────────────────────────────────────────────────────────────
 setTimeout(requestScore, INITIAL_DELAY_MS);
