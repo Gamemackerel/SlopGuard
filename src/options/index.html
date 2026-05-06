@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Slop Guard — Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="page-title">Slop Guard</h1>
+
+    <section class="section">
+      <h2 class="section-title">API Key</h2>
+      <p class="section-desc">
+        Your <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic API key</a>.
+        Stored locally and used to score pages with Claude Haiku (~$0.001 per page).
+      </p>
+      <div class="input-row">
+        <input type="password" id="api-key-input" class="text-input"
+               placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+        <button class="btn-primary" id="save-key-btn">Save</button>
+      </div>
+      <div class="status-msg" id="key-status"></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Ingestion Score</h2>
+      <div class="ingestion-display">
+        <div class="ingestion-big" id="ingestion-value">—</div>
+        <div class="ingestion-sub" id="ingestion-sub">No data yet</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Utility List</h2>
+      <p class="section-desc">
+        Sites in this list are ignored — no scoring, no ingestion tracking.
+      </p>
+      <div class="input-row">
+        <input type="text" id="domain-input" class="text-input" placeholder="example.com">
+        <button class="btn-secondary" id="add-domain-btn">Add</button>
+      </div>
+      <ul class="domain-list" id="domain-list"></ul>
+      <button class="btn-text" id="reset-btn">Reset to defaults</button>
+    </section>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>

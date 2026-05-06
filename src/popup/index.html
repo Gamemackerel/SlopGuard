@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Slop Guard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <span class="brand">SLOP GUARD</span>
+      <div class="score-badge gray" id="score-badge">
+        <span id="score-value">—</span>
+      </div>
+    </header>
+
+    <div class="state-msg" id="state-msg"></div>
+    <div class="explanation" id="explanation"></div>
+
+    <div class="rubric" id="rubric"></div>
+
+    <div class="actions">
+      <button class="btn" id="btn-utility">Mark as utility</button>
+      <button class="btn btn-settings" id="btn-settings">Settings</button>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-left">
+        <div class="footer-label">7-day score</div>
+        <div class="footer-hint" id="ingestion-hint"></div>
+      </div>
+      <div class="ingestion-score" id="ingestion-score">—</div>
+    </footer>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>
