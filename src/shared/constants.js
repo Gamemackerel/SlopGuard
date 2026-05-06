@@ -51,6 +51,10 @@ export const DEFAULT_BLACKLIST = [
 
 export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Bump this whenever the rubric dimensions change. Cached scores from a
+// previous version are silently discarded so pages get re-scored.
+export const CACHE_VERSION = 2;
+
 export const INGESTION_WINDOW_DAYS = 7;
 
 export const MAX_VISIT_DURATION_SECONDS = 1800;
