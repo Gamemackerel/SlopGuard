@@ -16,7 +16,6 @@ function dims(overrides = {}) {
     ai_generation_likelihood:       5,
     engagement_bait_score:          5,
     commercial_extraction_score:    5,
-    political_outrage_optimization: 5,
     attention_fragmentation:        5,
     ...overrides,
   };
@@ -56,7 +55,7 @@ describe('computeSlopIndex', () => {
       substance_density: 10, originality: 10, source_quality: 10,
       manipulation_tactics: 0, ai_generation_likelihood: 0,
       engagement_bait_score: 0, commercial_extraction_score: 0,
-      political_outrage_optimization: 0, attention_fragmentation: 0,
+      attention_fragmentation: 0,
     }))).toBeCloseTo(0, 1);
   });
 
@@ -65,7 +64,7 @@ describe('computeSlopIndex', () => {
       substance_density: 0, originality: 0, source_quality: 0,
       manipulation_tactics: 10, ai_generation_likelihood: 10,
       engagement_bait_score: 10, commercial_extraction_score: 10,
-      political_outrage_optimization: 10, attention_fragmentation: 10,
+      attention_fragmentation: 10,
     }))).toBeCloseTo(10, 1);
   });
 
@@ -165,33 +164,6 @@ describe('computeSlopIndex', () => {
     expect(Math.abs(engBait - manip)).toBeLessThan(0.5); // same weight
   });
 
-  // ── political_outrage_optimization ──
-  test('increasing political_outrage_optimization raises slop index', () => {
-    expect(computeSlopIndex(dims({ political_outrage_optimization: 9 }))).toBeGreaterThan(
-      computeSlopIndex(dims({ political_outrage_optimization: 1 })),
-    );
-  });
-
-  test('political_outrage_optimization at 10 raises slop index above neutral', () => {
-    const base = computeSlopIndex(dims());
-    const high = computeSlopIndex(dims({ political_outrage_optimization: 10 }));
-    expect(high).toBeGreaterThan(base);
-  });
-
-  test('political_outrage_optimization at 0 lowers slop index below neutral', () => {
-    const base = computeSlopIndex(dims());
-    const low  = computeSlopIndex(dims({ political_outrage_optimization: 0 }));
-    expect(low).toBeLessThan(base);
-  });
-
-  test('political_outrage_optimization has less weight than manipulation_tactics', () => {
-    const base    = computeSlopIndex(dims());
-    const highPol = computeSlopIndex(dims({ political_outrage_optimization: 10 }));
-    const highMan = computeSlopIndex(dims({ manipulation_tactics: 10 }));
-    // manipulation_tactics weight 1.5 > political_outrage weight 1.3
-    expect(highMan - base).toBeGreaterThan(highPol - base);
-  });
-
   // ── originality reframe ──
   test('originality still lowers slop index when high', () => {
     expect(computeSlopIndex(dims({ originality: 9 }))).toBeLessThan(
@@ -209,9 +181,8 @@ describe('computeSlopIndex', () => {
       source_quality:                 5,
       manipulation_tactics:           8,
       ai_generation_likelihood:       1,
-      engagement_bait_score:          8,
+      engagement_bait_score:          10,
       commercial_extraction_score:    3,
-      political_outrage_optimization: 10,
     });
     expect(computeSlopIndex(snarkProfile)).toBeGreaterThan(6.5);
     expect(getSlopLabel(computeSlopIndex(snarkProfile))).toBe('high');
@@ -228,7 +199,6 @@ describe('computeSlopIndex', () => {
       ai_generation_likelihood:     1,
       engagement_bait_score:        2,
       commercial_extraction_score:  1,
-      political_outrage_optimization: 1,
     });
     expect(computeSlopIndex(analysisProfile)).toBeLessThan(3.5);
     expect(getSlopLabel(computeSlopIndex(analysisProfile))).toBe('low');
@@ -264,7 +234,6 @@ describe('computeSlopIndex', () => {
       ai_generation_likelihood:       1,
       engagement_bait_score:          6,
       commercial_extraction_score:    3,
-      political_outrage_optimization: 3,
       attention_fragmentation:        9,
     });
     const score = computeSlopIndex(qualityFeed);
@@ -282,7 +251,6 @@ describe('computeSlopIndex', () => {
       ai_generation_likelihood:       3,
       engagement_bait_score:          8,
       commercial_extraction_score:    5,
-      political_outrage_optimization: 5,
       attention_fragmentation:        9,
     });
     expect(computeSlopIndex(lowQualityFeed)).toBeGreaterThan(6.5);
@@ -297,7 +265,6 @@ describe('computeSlopIndex', () => {
       ai_generation_likelihood:       1,
       engagement_bait_score:          2,
       commercial_extraction_score:    1,
-      political_outrage_optimization: 1,
       attention_fragmentation:        1,
     });
     expect(computeSlopIndex(articlePage)).toBeLessThan(3.5);
@@ -306,8 +273,7 @@ describe('computeSlopIndex', () => {
   test('same content quality: feed version scores higher than article version', () => {
     const base = { substance_density: 5, originality: 5, source_quality: 6,
       manipulation_tactics: 3, ai_generation_likelihood: 1,
-      engagement_bait_score: 4, commercial_extraction_score: 2,
-      political_outrage_optimization: 2 };
+      engagement_bait_score: 4, commercial_extraction_score: 2 };
     const feed    = dims({ ...base, attention_fragmentation: 9 });
     const article = dims({ ...base, attention_fragmentation: 1 });
     expect(computeSlopIndex(feed)).toBeGreaterThan(computeSlopIndex(article));
@@ -320,11 +286,9 @@ describe('computeSlopIndex', () => {
     expect(highManip - base).toBeGreaterThan(highFrag - base);
   });
 
-  test('same originality score ranks lower after reframe: reaction piece vs analysis piece', () => {
-    // Two pieces with the same originality=3 but different overall profiles:
-    // the gotcha piece should still score worse than straight reporting.
-    const reactionPiece = dims({ originality: 3, political_outrage_optimization: 8, substance_density: 2 });
-    const straightNews  = dims({ originality: 3, political_outrage_optimization: 1, substance_density: 6 });
+  test('same originality: high engagement bait scores worse than neutral', () => {
+    const reactionPiece = dims({ originality: 3, engagement_bait_score: 9, substance_density: 2 });
+    const straightNews  = dims({ originality: 3, engagement_bait_score: 2, substance_density: 6 });
     expect(computeSlopIndex(reactionPiece)).toBeGreaterThan(computeSlopIndex(straightNews));
   });
 });
@@ -381,9 +345,9 @@ describe('buildExplanation', () => {
     expect(s.toLowerCase()).toMatch(/credible|authoritative|source/);
   });
 
-  test('high slop + high engagement_bait → mentions clicks/engagement/optimized', () => {
+  test('high slop + high engagement_bait → mentions clicks/engagement/outrage/optimized', () => {
     const s = buildExplanation(dims({ engagement_bait_score: 9, substance_density: 1 }), 8.5);
-    expect(s.toLowerCase()).toMatch(/click|engagement|optimized/);
+    expect(s.toLowerCase()).toMatch(/click|engagement|outrage|optimized/);
   });
 
   test('high slop + high manipulation → mentions manipulation/fear/outrage/urgency', () => {
@@ -413,39 +377,26 @@ describe('buildExplanation', () => {
 
   test('attention_fragmentation takes top precedence in explanation when highest signal', () => {
     const s = buildExplanation(
-      dims({ attention_fragmentation: 9, political_outrage_optimization: 8, substance_density: 2 }),
+      dims({ attention_fragmentation: 9, engagement_bait_score: 8, substance_density: 2 }),
       8.0,
     );
     expect(s.toLowerCase()).toMatch(/feed|list|scan|headline/);
   });
 
-  test('low attention_fragmentation falls through to next explanation', () => {
+  test('low attention_fragmentation falls through to engagement bait explanation', () => {
     const s = buildExplanation(
-      dims({ attention_fragmentation: 2, political_outrage_optimization: 8, substance_density: 1 }),
+      dims({ attention_fragmentation: 2, engagement_bait_score: 8, substance_density: 1 }),
       7.5,
     );
-    expect(s.toLowerCase()).toMatch(/outrage|tribal|political/);
+    expect(s.toLowerCase()).toMatch(/click|engagement|optimized|outrage/);
   });
 
-  test('high slop + high political_outrage → mentions outrage/tribal/political', () => {
-    const s = buildExplanation(dims({ political_outrage_optimization: 9, substance_density: 1 }), 8.0);
-    expect(s.toLowerCase()).toMatch(/outrage|tribal|political|validation/);
-  });
-
-  test('political outrage takes precedence over engagement bait in explanation when both high', () => {
+  test('high engagement_bait on political snark piece mentions outrage or engagement', () => {
     const s = buildExplanation(
-      dims({ political_outrage_optimization: 8, engagement_bait_score: 8, substance_density: 1 }),
+      dims({ engagement_bait_score: 9, manipulation_tactics: 7, substance_density: 1 }),
       8.5,
     );
-    expect(s.toLowerCase()).toMatch(/outrage|tribal|political/);
-  });
-
-  test('low political_outrage on high-slop piece falls through to other explanations', () => {
-    const s = buildExplanation(
-      dims({ political_outrage_optimization: 2, engagement_bait_score: 8, substance_density: 1 }),
-      7.5,
-    );
-    expect(s.toLowerCase()).toMatch(/click|engagement|optimized/);
+    expect(s.toLowerCase()).toMatch(/engagement|outrage|click|optimized/);
   });
 });
 
@@ -619,20 +570,20 @@ describe('scoreContent', () => {
 
   test('all-good dimensions → slopIndex near 0 and label "low"', async () => {
     const storage = new MockStorage({ [STORAGE_KEYS.API_KEY]: 'sk-ant-test' });
-    const result  = await scoreContent({
-      title: TITLE, url: URL_STR, textContent: CONTENT, storage,
-      fetchFn: makeFetch(dims({ substance_density: 10, originality: 10, source_quality: 10, manipulation_tactics: 0, ai_generation_likelihood: 0, engagement_bait_score: 0, commercial_extraction_score: 0, political_outrage_optimization: 0, attention_fragmentation: 0 })),
-    });
+    const allGood = dims({ substance_density: 10, originality: 10, source_quality: 10,
+      manipulation_tactics: 0, ai_generation_likelihood: 0, engagement_bait_score: 0,
+      commercial_extraction_score: 0, attention_fragmentation: 0 });
+    const result  = await scoreContent({ title: TITLE, url: URL_STR, textContent: CONTENT, storage, fetchFn: makeFetch(allGood) });
     expect(result.slopIndex).toBeCloseTo(0, 1);
     expect(result.label).toBe('low');
   });
 
   test('all-bad dimensions → slopIndex near 10 and label "high"', async () => {
     const storage = new MockStorage({ [STORAGE_KEYS.API_KEY]: 'sk-ant-test' });
-    const result  = await scoreContent({
-      title: TITLE, url: URL_STR, textContent: CONTENT, storage,
-      fetchFn: makeFetch(dims({ substance_density: 0, originality: 0, source_quality: 0, manipulation_tactics: 10, ai_generation_likelihood: 10, engagement_bait_score: 10, commercial_extraction_score: 10, political_outrage_optimization: 10, attention_fragmentation: 10 })),
-    });
+    const allBad = dims({ substance_density: 0, originality: 0, source_quality: 0,
+      manipulation_tactics: 10, ai_generation_likelihood: 10, engagement_bait_score: 10,
+      commercial_extraction_score: 10, attention_fragmentation: 10 });
+    const result  = await scoreContent({ title: TITLE, url: URL_STR, textContent: CONTENT, storage, fetchFn: makeFetch(allBad) });
     expect(result.slopIndex).toBeCloseTo(10, 1);
     expect(result.label).toBe('high');
   });
