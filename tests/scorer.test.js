@@ -345,14 +345,14 @@ describe('buildExplanation', () => {
     expect(s.toLowerCase()).toMatch(/credible|authoritative|source/);
   });
 
-  test('high slop + high engagement_bait → mentions clicks/engagement/outrage/optimized', () => {
+  test('high slop + high engagement_bait → mentions clickbait/headline/title/clicks', () => {
     const s = buildExplanation(dims({ engagement_bait_score: 9, substance_density: 1 }), 8.5);
-    expect(s.toLowerCase()).toMatch(/click|engagement|outrage|optimized/);
+    expect(s.toLowerCase()).toMatch(/click|headline|title/);
   });
 
-  test('high slop + high manipulation → mentions manipulation/fear/outrage/urgency', () => {
+  test('high slop + high manipulation → mentions fear/outrage/tribal/judgment/emotion', () => {
     const s = buildExplanation(dims({ manipulation_tactics: 9, substance_density: 1 }), 8.0);
-    expect(s.toLowerCase()).toMatch(/manipulation|fear|outrage|urgency/);
+    expect(s.toLowerCase()).toMatch(/fear|outrage|tribal|judgment|emotion|exploit/);
   });
 
   test('high slop + high commercial_extraction → mentions commercial/browsing/gain', () => {
@@ -388,15 +388,16 @@ describe('buildExplanation', () => {
       dims({ attention_fragmentation: 2, engagement_bait_score: 8, substance_density: 1 }),
       7.5,
     );
-    expect(s.toLowerCase()).toMatch(/click|engagement|optimized|outrage/);
+    expect(s.toLowerCase()).toMatch(/click|headline|title/);
   });
 
-  test('high engagement_bait on political snark piece mentions outrage or engagement', () => {
+  test('high engagement_bait with high manipulation: attention_fragmentation checked first', () => {
     const s = buildExplanation(
-      dims({ engagement_bait_score: 9, manipulation_tactics: 7, substance_density: 1 }),
+      dims({ attention_fragmentation: 2, engagement_bait_score: 9, manipulation_tactics: 7, substance_density: 1 }),
       8.5,
     );
-    expect(s.toLowerCase()).toMatch(/engagement|outrage|click|optimized/);
+    // engagement_bait checked before manipulation in precedence order
+    expect(s.toLowerCase()).toMatch(/click|headline|title/);
   });
 });
 
