@@ -41,7 +41,9 @@ body {
 }
 .score-badge.gray   { background: #9ca3af; }
 .score-badge.green  { background: #22c55e; }
+.score-badge.lime   { background: #84cc16; }
 .score-badge.yellow { background: #eab308; }
+.score-badge.orange { background: #f97316; }
 .score-badge.red    { background: #ef4444; }
 
 /* ── State message ── */
@@ -77,7 +79,7 @@ body {
 .rubric-label {
   font-size: 11px;
   color: #666;
-  width: 96px;
+  width: 108px;
   flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;

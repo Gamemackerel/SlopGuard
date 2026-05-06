@@ -19,8 +19,10 @@ const inFlight = new Map();
 
 function iconPath(slopIndex) {
   if (slopIndex === null || slopIndex === undefined) return { 32: 'icons/gray.png' };
-  if (slopIndex < SLOP_THRESHOLDS.LOW)               return { 32: 'icons/green.png' };
-  if (slopIndex <= SLOP_THRESHOLDS.HIGH)             return { 32: 'icons/yellow.png' };
+  if (slopIndex < 2) return { 32: 'icons/green.png' };
+  if (slopIndex < 4) return { 32: 'icons/lime.png' };
+  if (slopIndex < 6) return { 32: 'icons/yellow.png' };
+  if (slopIndex < 8) return { 32: 'icons/orange.png' };
   return { 32: 'icons/red.png' };
 }
 

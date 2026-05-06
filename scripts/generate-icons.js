@@ -9,7 +9,9 @@ const iconsDir  = join(__dirname, '../dist/icons');
 const COLORS = {
   gray:   [136, 136, 136],
   green:  [34,  197, 94 ],
+  lime:   [132, 204, 22 ],
   yellow: [234, 179, 8  ],
+  orange: [249, 115, 22 ],
   red:    [239, 68,  68 ],
 };
 

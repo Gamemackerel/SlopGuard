@@ -2,8 +2,10 @@ import { RUBRIC_DIMENSIONS } from '../shared/constants.js';
 
 function colorClass(slopIndex) {
   if (slopIndex === null || slopIndex === undefined) return 'gray';
-  if (slopIndex < 3.5)  return 'green';
-  if (slopIndex <= 6.5) return 'yellow';
+  if (slopIndex < 2) return 'green';
+  if (slopIndex < 4) return 'lime';
+  if (slopIndex < 6) return 'yellow';
+  if (slopIndex < 8) return 'orange';
   return 'red';
 }
 

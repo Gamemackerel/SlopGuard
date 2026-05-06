@@ -16,16 +16,21 @@ const NEGATIVE_MAX = Math.abs(
     .reduce((a, b) => a + b, 0),
 ) * 10;
 
-const RAW_MIN = -NEGATIVE_MAX;
-const RAW_RANGE = POSITIVE_MAX + NEGATIVE_MAX;
-
+// Normalize each side independently against its own theoretical maximum,
+// then combine. This preserves the ratio between bad and good signals
+// rather than measuring both against a shared absolute range.
+// At all-5 (neutral): bad_norm = 0.5, good_norm = 0.5 → score = 5.0
+// All good → 0, all bad → 10.
 export function computeSlopIndex(dimensions) {
-  let raw = 0;
+  let badContribution = 0;
+  let goodContribution = 0;
   for (const [dim, weight] of Object.entries(RUBRIC_WEIGHTS)) {
-    raw += (dimensions[dim] ?? 5) * weight;
+    const value = dimensions[dim] ?? 5;
+    if (weight > 0) badContribution  += value * weight;
+    else            goodContribution += value * Math.abs(weight);
   }
-  const normalized = (raw - RAW_MIN) / RAW_RANGE * 10;
-  return Math.round(Math.max(0, Math.min(10, normalized)) * 10) / 10;
+  const score = (badContribution / POSITIVE_MAX - goodContribution / NEGATIVE_MAX + 1) / 2 * 10;
+  return Math.round(Math.max(0, Math.min(10, score)) * 10) / 10;
 }
 
 export function getSlopLabel(slopIndex) {
