@@ -45,10 +45,11 @@ export function buildExplanation(dimensions, slopIndex) {
   }
 
   if (label === 'high') {
-    if (dimensions.engagement_bait_score >= 7)       return 'Heavily optimized for clicks over substance.';
-    if (dimensions.manipulation_tactics >= 7)        return 'Uses emotional manipulation and manufactured urgency.';
-    if (dimensions.commercial_extraction_score >= 7) return 'Designed to keep you browsing for commercial gain.';
-    if (dimensions.ai_generation_likelihood >= 7)    return 'Likely AI-generated filler content.';
+    if (dimensions.political_outrage_optimization >= 7) return 'Optimized for political outrage and tribal validation over understanding.';
+    if (dimensions.engagement_bait_score >= 7)          return 'Heavily optimized for clicks over substance.';
+    if (dimensions.manipulation_tactics >= 7)           return 'Uses emotional manipulation and manufactured urgency.';
+    if (dimensions.commercial_extraction_score >= 7)    return 'Designed to keep you browsing for commercial gain.';
+    if (dimensions.ai_generation_likelihood >= 7)       return 'Likely AI-generated filler content.';
     return 'Low information density with high engagement optimization.';
   }
 

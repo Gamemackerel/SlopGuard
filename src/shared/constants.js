@@ -6,6 +6,7 @@ export const RUBRIC_WEIGHTS = {
   ai_generation_likelihood: 1.0,
   engagement_bait_score: 1.5,
   commercial_extraction_score: 1.0,
+  political_outrage_optimization: 1.3,
 };
 
 export const RUBRIC_DIMENSIONS = [
@@ -15,7 +16,8 @@ export const RUBRIC_DIMENSIONS = [
   { key: 'manipulation_tactics',     label: 'Manipulation',    positive: false },
   { key: 'ai_generation_likelihood', label: 'AI-Generated',    positive: false },
   { key: 'engagement_bait_score',    label: 'Engagement Bait', positive: false },
-  { key: 'commercial_extraction_score', label: 'Commercial',   positive: false },
+  { key: 'commercial_extraction_score',     label: 'Commercial',    positive: false },
+  { key: 'political_outrage_optimization',  label: 'Outrage Bait',  positive: false },
 ];
 
 export const SLOP_THRESHOLDS = {
@@ -62,14 +64,15 @@ export const API_MODEL = 'claude-haiku-4-5-20251001';
 
 export const CONTENT_MAX_CHARS = 8000;
 
-export const SCORING_PROMPT = `You are a content quality evaluator. Analyze the following web page and score it on seven dimensions using integers 0–10:
+export const SCORING_PROMPT = `You are a content quality evaluator. Analyze the following web page and score it on eight dimensions using integers 0–10:
 
-- substance_density: How much substantive, original information is present? (10 = very dense with facts/analysis, 0 = empty filler)
-- originality: Is the content original vs. rehashed/aggregated? (10 = highly original, 0 = pure aggregation)
+- substance_density: How much substantive information is present? (10 = dense with facts/analysis that enriches understanding, 0 = empty filler or pure reaction)
+- originality: Does this offer original insight or analysis beyond surface-level facts or reactions? A brief reaction to a news event or tweet scores 1–2 even if it technically broke the story. (10 = genuinely novel insight/analysis, 0 = reaction or aggregation with no added insight)
 - source_quality: How credible and authoritative? (10 = expert/primary source, 0 = unknown/unreliable)
 - manipulation_tactics: Does it use fear, outrage, or urgency to hold attention? (10 = heavy manipulation, 0 = none)
 - ai_generation_likelihood: Does this read like AI-generated filler? (10 = almost certainly, 0 = clearly human)
 - engagement_bait_score: Is this optimized for clicks over substance? (10 = pure clickbait, 0 = not at all)
 - commercial_extraction_score: Is this designed to keep you browsing to extract commercial value? (10 = pure extraction, 0 = none)
+- political_outrage_optimization: Is the primary emotional reward tribal/political validation or manufactured outrage rather than genuine understanding? Score high for political snark, gotcha coverage, and content whose value is "your side wins." (10 = pure outrage fuel/tribal content, 0 = none)
 
-Return ONLY a valid JSON object with these exact seven keys and integer values 0–10. No explanation, no markdown fences.`;
+Return ONLY a valid JSON object with these exact eight keys and integer values 0–10. No explanation, no markdown fences.`;
